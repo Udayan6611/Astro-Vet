@@ -6,26 +6,22 @@ def run_sentinel(tic_id, sector, out_dir="data"):
     print(f"[*] Querying MAST API for TIC {tic_id} (Sector {sector})...")
     
     # 1. Search and Download the Target Pixel File (TPF)
+    # Apply the 'hard' quality bitmask natively during the download
     search_result = lk.search_targetpixelfile(f"TIC {tic_id}", sector=sector, author="SPOC")
-    tpf = search_result.download(download_dir=out_dir)
+    tpf_clean = search_result.download(download_dir=out_dir, quality_bitmask='hard')
     
-    if tpf is None:
+    if tpf_clean is None:
         print("[-] Failed to download TPF.")
         return
 
-    print(f"[+] Downloaded TPF: {tpf.shape[0]} cadences (frames) found.")
+    print(f"[+] Downloaded and Cleaned TPF: {tpf_clean.shape[0]} valid cadences remain.")
 
-    # 2. Clean the Data (The Sentinel Bitmask)
-    # 'hard' removes all cadences flagged for anomalies by NASA
-    tpf_clean = tpf[tpf.quality_mask == 'hard']
-    print(f"[+] Cleaned Data: {tpf_clean.shape[0]} valid cadences remain.")
-
-    # 3. Extract and Normalize the Light Curve
+    # 2. Extract and Normalize the Light Curve
     # Aperture photometry extracts the 1D light curve from the 2D pixels
     lc = tpf_clean.to_lightcurve(aperture_mask=tpf_clean.pipeline_mask)
     lc_clean = lc.remove_nans().normalize().flatten(window_length=101)
 
-    # 4. Generate Output Visuals for Review 1
+    # 3. Generate Output Visuals for Review 1
     fig, axes = plt.subplots(1, 2, figsize=(15, 5))
     
     # Plot 1: The 2D Pixel Heatmap (Cadence 0)
