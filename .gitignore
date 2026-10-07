@@ -2,4 +2,4 @@ venv/
 __pycache__/
 data/
 *.fits
-.DS_Store
+.DS_Store*.pth
